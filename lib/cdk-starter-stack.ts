@@ -1,8 +1,8 @@
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as s3 from '@aws-cdk/aws-s3';
 import * as s3n from '@aws-cdk/aws-s3-notifications';
-// import * as sns from '@aws-cdk/aws-sns';
-// import * as sqs from '@aws-cdk/aws-sqs';
+import * as sns from '@aws-cdk/aws-sns';
+import * as sqs from '@aws-cdk/aws-sqs';
 import * as cdk from '@aws-cdk/core';
 import * as path from 'path';
 
@@ -31,22 +31,34 @@ export class CdkStarterStack extends cdk.Stack {
       // {prefix: 'test/', suffix: '.yaml'},
     );
 
-    // const queue = new sqs.Queue(this, 'sqs-queue');
+    new cdk.CfnOutput(this, 'bucketName', {
+      value: s3Bucket.bucketName,
+    });
 
-    // s3Bucket.addEventNotification(
-    //   s3.EventType.OBJECT_REMOVED,
-    //   new s3n.SqsDestination(queue),
-    //   // 👇 only send message to queue if object matches the filter
-    //   // {prefix: 'test/', suffix: '.png'},
-    // );
+    const queue = new sqs.Queue(this, 'sqs-queue');
 
-    // const topic = new sns.Topic(this, 'sns-topic');
+    s3Bucket.addEventNotification(
+      s3.EventType.OBJECT_REMOVED,
+      new s3n.SqsDestination(queue),
+      // 👇 only send message to queue if object matches the filter
+      // {prefix: 'test/', suffix: '.png'},
+    );
 
-    // s3Bucket.addEventNotification(
-    //   s3.EventType.REDUCED_REDUNDANCY_LOST_OBJECT,
-    //   new s3n.SnsDestination(topic),
-    //   // 👇 only send message to topic if object matches the filter
-    //   // {prefix: 'test/', suffix: '.png'},
-    // );
+    new cdk.CfnOutput(this, 'queueName', {
+      value: queue.queueName,
+    });
+
+    const topic = new sns.Topic(this, 'sns-topic');
+
+    s3Bucket.addEventNotification(
+      s3.EventType.REDUCED_REDUNDANCY_LOST_OBJECT,
+      new s3n.SnsDestination(topic),
+      // 👇 only send message to topic if object matches the filter
+      // {prefix: 'test/', suffix: '.png'},
+    );
+
+    new cdk.CfnOutput(this, 'topicName', {
+      value: topic.topicName,
+    });
   }
 }
